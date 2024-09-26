@@ -275,6 +275,17 @@ type DeleteItemInput struct {
 	TableName                   *string                            `min:"3" type:"string" required:"true"`
 }
 
+// GetItemInput represnets the input for a GetItem operation.
+type GetItemInput struct {
+	_                        struct{}          `type:"structure"`
+	Key                      map[string]*Item  `type:"map" required:"true"`
+	TableName                *string           `min:"3" type:"string" required:"true"`
+	ConsistentRead           *bool             `type:"boolean"`
+	ExpressionAttributeNames map[string]string `type:"map"`
+	ProjectionExpression     string            `type:"string"`
+	ReturnConsumedCapacity   *string           `type:"string" enum:"ReturnConsumedCapacity"`
+}
+
 // ExpectedAttributeValue represents a condition to be compared with an attribute value
 type ExpectedAttributeValue struct {
 	_                  struct{} `type:"structure"`

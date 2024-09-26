@@ -633,6 +633,41 @@ func TestPutWithGSI(t *testing.T) {
 	c.NoError(err)
 }
 
+func TestGetItemWithProjectionExpression(t *testing.T) {
+	c := require.New(t)
+	client := setupClient(tableName)
+
+	err := ensurePokemonTable(client)
+	c.NoError(err)
+
+	err = ensurePokemonTypeIndex(client)
+	c.NoError(err)
+
+	err = createPokemon(client, pokemon{
+		ID:   "0025",
+		Type: "electric",
+		Name: "Pikachu",
+	})
+	c.NoError(err)
+
+	input := &dynamodb.GetItemInput{
+		TableName: aws.String(tableName),
+		Key: map[string]dynamodbtypes.AttributeValue{
+			"id": &dynamodbtypes.AttributeValueMemberS{
+				Value: "0025",
+			},
+		},
+		ProjectionExpression: aws.String("id, type"),
+	}
+
+	item, err := client.GetItem(context.Background(), input)
+	c.Nil(err)
+
+	c.NotNil(item.Item["id"])
+	c.NotNil(item.Item["type"])
+	c.Nil(item.Item["name"])
+}
+
 func TestGetItemWithUnusedAttributes(t *testing.T) {
 	c := require.New(t)
 

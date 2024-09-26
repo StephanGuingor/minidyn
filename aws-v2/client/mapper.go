@@ -374,6 +374,22 @@ func mapDynamoToTypesUpdateItemInput(input *dynamodb.UpdateItemInput) *types.Upd
 	}
 }
 
+func mapDynamoToTypesGetItem(input *dynamodb.GetItemInput) types.GetItemInput {
+	output := types.GetItemInput{
+		Key:                      mapDynamoToTypesMapItem(input.Key),
+		TableName:                input.TableName,
+		ConsistentRead:           input.ConsistentRead,
+		ExpressionAttributeNames: input.ExpressionAttributeNames,
+		ReturnConsumedCapacity:   toString(string(input.ReturnConsumedCapacity)),
+	}
+
+	if input.ProjectionExpression != nil {
+		output.ProjectionExpression = aws.ToString(input.ProjectionExpression)
+	}
+
+	return output
+}
+
 func mapDynamoToTypesQueryInput(input *dynamodb.QueryInput, indexName string) core.QueryInput {
 	output := core.QueryInput{
 		Index:                     indexName,
@@ -396,6 +412,10 @@ func mapDynamoToTypesQueryInput(input *dynamodb.QueryInput, indexName string) co
 
 	if input.ScanIndexForward != nil {
 		output.ScanIndexForward = aws.ToBool(input.ScanIndexForward)
+	}
+
+	if input.ProjectionExpression != nil {
+		output.ProjectionExpression = aws.ToString(input.ProjectionExpression)
 	}
 
 	return output

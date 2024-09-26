@@ -338,15 +338,17 @@ func (fd *Client) GetItem(ctx context.Context, input *dynamodb.GetItemInput, opt
 		return nil, mapKnownError(err)
 	}
 
-	key, err := table.KeySchema.GetKey(table.AttributesDef, mapDynamoToTypesMapItem(input.Key))
+	item, err := table.Get(mapDynamoToTypesGetItem(input))
 	if err != nil {
-		return nil, &smithy.GenericAPIError{Code: "ValidationException", Message: err.Error()}
+		if errors.Is(err, interpreter.ErrSyntaxError) {
+			return nil, &smithy.GenericAPIError{Code: "ValidationException", Message: err.Error()}
+		}
+
+		return nil, mapKnownError(err)
 	}
 
-	item := copyItem(mapTypesToDynamoMapItem(table.Data[key]))
-
 	output := &dynamodb.GetItemOutput{
-		Item: item,
+		Item: mapTypesToDynamoMapItem(item),
 	}
 
 	return output, nil

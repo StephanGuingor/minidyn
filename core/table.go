@@ -17,6 +17,7 @@ type QueryInput struct {
 	KeyConditionExpression    string
 	ConditionExpression       *string
 	FilterExpression          string
+	ProjectionExpression      string
 	Aliases                   map[string]string
 	ScanIndexForward          bool
 	Scan                      bool
@@ -281,17 +282,24 @@ func prepareSearch(input *QueryInput, index *index, k, startKey string) (string,
 	return "", false
 }
 
+func (t *Table) projectItem(projectionExpression string, item map[string]*types.Item) map[string]*types.Item {
+	// TODO: add projection logic
+
+	// parse expression and apply it to item
+
+	return copyItem(item)
+}
+
 func (t *Table) getMatchedItemAndCount(input *QueryInput, pk, startKey string) (map[string]*types.Item, interpreter.ExpressionType, bool) {
 	storedItem, ok := t.Data[pk]
 
 	lastMatchExpressionType, matched := t.matchKey(*input, storedItem)
 
 	if ok && !(input.started && matched) {
-		return copyItem(storedItem), lastMatchExpressionType, false
+		return t.projectItem(input.ProjectionExpression, storedItem), lastMatchExpressionType, false
 	}
 
-	// TODO: use project info to create the copy
-	return copyItem(storedItem), lastMatchExpressionType, true
+	return t.projectItem(input.ProjectionExpression, storedItem), lastMatchExpressionType, true
 }
 
 func shouldReturnNextKey(item map[string]*types.Item, count, scanned, limit, keysSize int64) bool {
@@ -319,7 +327,21 @@ func GetKeyAt(sortedKeys []string, size int64, pos int64, forward bool) string {
 	return sortedKeys[pos]
 }
 
-// SearchData quiery the table based on the input
+// Get retrieves an item from the table based on the key
+func (t *Table) Get(input types.GetItemInput) (map[string]*types.Item, error) {
+	key, err := t.KeySchema.GetKey(t.AttributesDef, input.Key)
+	if err != nil {
+		return nil, types.NewError("ValidationException", err.Error(), nil)
+	}
+
+	// handle not found
+
+	item := t.getItem(key)
+
+	return t.projectItem(input.ProjectionExpression, item), nil
+}
+
+// SearchData query the table based on the input
 func (t *Table) SearchData(input QueryInput) ([]map[string]*types.Item, map[string]*types.Item) {
 	items := []map[string]*types.Item{}
 	limit := input.Limit
